@@ -1,0 +1,111 @@
+﻿<Controls:MetroWindow x:Class="KaraokeSystem.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+        Title="3280 Media Player" Height="500" Width="750" Name="myMainWindow">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Resources/Icons.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+    <Controls:MetroWindow.WindowCommands>
+        <Controls:WindowCommands>
+            <Button Content="Add New Media" Click="Add_New_Media" />
+        </Controls:WindowCommands>
+    </Controls:MetroWindow.WindowCommands>
+    <Grid Name="MainGrid" SizeChanged="MainGrid_SizeChanged" Background="#FFAFD5F0">
+        <Grid.LayoutTransform>
+            <ScaleTransform x:Name="ApplicationScaleTransform"
+                            CenterX="0"
+                            CenterY="0"
+                            ScaleX="{Binding ElementName=myMainWindow, Path=ScaleValue}"
+                            ScaleY="{Binding ElementName=myMainWindow, Path=ScaleValue}"/>
+        </Grid.LayoutTransform>
+        <Grid HorizontalAlignment="Left" Width="222">
+            <Grid.Background>
+                <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                    <GradientStop Color="#FF535252" Offset="0"/>
+                    <GradientStop Color="#FF999898" Offset="0.996"/>
+                </LinearGradientBrush>
+            </Grid.Background>
+            <StackPanel>
+                <TextBox Name="SearchAudio" Margin="10,10,10,10" Controls:TextboxHelper.Watermark="Search your media here.." Controls:TextboxHelper.ClearTextButton="True" TextChanged="SearchAudio_TextChanged"/>
+                <TabControl HorizontalAlignment="Left" Height="420" VerticalAlignment="Top" Width="200" Margin="10,0,0,0">
+                    <TabItem Header="Audio">
+                        <Grid>
+                            <Rectangle Stroke="#FF125676" Fill="#FF1A4A6C" />
+                            <ScrollViewer HorizontalAlignment="Left" VerticalAlignment="Top">
+                                <StackPanel Name="AudioList">
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Grid>
+                    </TabItem>
+                    <TabItem Header="Video">
+                        <Grid>
+                            <Rectangle Stroke="#FF125676" Fill="#FF1A4A6C" />
+                            <ScrollViewer HorizontalAlignment="Left" VerticalAlignment="Top">
+                                <StackPanel Name="VideoList">
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Grid>
+                    </TabItem>
+                </TabControl>
+            </StackPanel>
+        </Grid>
+        <Grid Name="ControlArea" Margin="222,0,0,0" Height="85" VerticalAlignment="Bottom" Background="#FFECE9E9">
+            <Button Name="Repeat_btn" HorizontalAlignment="Left" Margin="10,23,0,0" VerticalAlignment="Top" Width="50" Height="50" Click="Button_Click">
+                <Rectangle Height="20" Width="20">
+                    <Rectangle.Fill>
+                        <VisualBrush Visual="{StaticResource appbar_repeat}"/>
+                    </Rectangle.Fill>
+                </Rectangle>
+            </Button>
+            <Button Name="Suffle_btn" HorizontalAlignment="Left" Margin="65,23,0,0" VerticalAlignment="Top" Width="50" Height="50" Click="Suffle_btn_Click">
+                <Rectangle Height="20" Width="20">
+                    <Rectangle.Fill>
+                        <VisualBrush Visual="{StaticResource appbar_shuffle}"/>
+                    </Rectangle.Fill>
+                </Rectangle>
+            </Button>
+            <Button Name="Stop_btn" HorizontalAlignment="Left" Margin="121,23,0,0" VerticalAlignment="Top" Width="50" Style="{DynamicResource MetroCircleButtonStyle}" Height="50">
+                <Rectangle Height="15" Width="15">
+                    <Rectangle.Fill>
+                        <VisualBrush Visual="{StaticResource appbar_stop}"/>
+                    </Rectangle.Fill>
+                </Rectangle>
+            </Button>
+            <Button Name="Rewind_btn" HorizontalAlignment="Left" Margin="171,23,0,0" VerticalAlignment="Top" Width="50" Style="{DynamicResource MetroCircleButtonStyle}" Height="50">
+                <Rectangle Height="15" Width="15">
+                    <Rectangle.Fill>
+                        <VisualBrush Visual="{StaticResource appbar_rewind}"/>
+                    </Rectangle.Fill>
+                </Rectangle>
+            </Button>
+            <Button Name="Play_btn" HorizontalAlignment="Left" Margin="221,16,0,0" VerticalAlignment="Top" Width="60" Style="{DynamicResource MetroCircleButtonStyle}" Height="60">
+                <Rectangle Height="25" Width="25">
+                    <Rectangle.Fill>
+                        <VisualBrush Visual="{StaticResource appbar_play}"/>
+                    </Rectangle.Fill>
+                </Rectangle>
+            </Button>
+            <Button Name="Forward_btn" HorizontalAlignment="Left" Margin="281,23,0,0" VerticalAlignment="Top" Width="50" Style="{DynamicResource MetroCircleButtonStyle}" Height="50">
+                <Rectangle Height="15" Width="15">
+                    <Rectangle.Fill>
+                        <VisualBrush Visual="{StaticResource appbar_fastforward}"/>
+                    </Rectangle.Fill>
+                </Rectangle>
+            </Button>
+            <DockPanel HorizontalAlignment="Left" VerticalAlignment="Top">
+                <Rectangle Name="Volume_Icon" Height="20" Width="20" Margin="400,30,0,0">
+                    <Rectangle.Fill>
+                        <VisualBrush Visual="{StaticResource appbar_sound_3}"/>
+                    </Rectangle.Fill>
+                </Rectangle>
+                <Slider Name="Volume_Slide" HorizontalAlignment="Left" Margin="10,35,0,0" VerticalAlignment="Top" Height="27" Width="76" Value="100"/>
+            </DockPanel>
+        </Grid>
+        <TextBlock HorizontalAlignment="Left" Height="23" Margin="250,13,0,0" TextWrapping="Wrap" Name="Now_Playing_Media" Text="Now Playing:" VerticalAlignment="Top" Width="451" FontFamily="Segoe UI, Lucida Sans Unicode, Verdana" />
+    </Grid>
+</Controls:MetroWindow>
