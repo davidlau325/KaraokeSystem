@@ -34,6 +34,11 @@ namespace ConsoleApplication1
         [DllImport("WavePlayerLib.dll", CallingConvention = CallingConvention.Cdecl)]
         public static extern void skipTo(int secPosition);
         /*
+         * Stop the playing of wav.
+         */ 
+        [DllImport("WavePlayerLib.dll", CallingConvention = CallingConvention.Cdecl)]
+        public static extern void StopWave();
+        /*
          * Start the playing of wav file.
          */
         [DllImport("WavePlayerLib.dll", CallingConvention = CallingConvention.Cdecl)]
