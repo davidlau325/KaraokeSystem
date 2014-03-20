@@ -5,18 +5,20 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              mc:Ignorable="d" 
              d:DesignHeight="100" d:DesignWidth="180">
-    <Grid Name="ElementGrid" MouseEnter="Grid_MouseEnter" MouseLeave="Grid_MouseLeave">
-        <Grid.ContextMenu>
-            <ContextMenu>
-                <MenuItem Header = "Edit" Click="MenuItem_Click_1"/>
-                <MenuItem Header = "Delete" Click="MenuItem_Click" />
-            </ContextMenu>
-        </Grid.ContextMenu>
-        <StackPanel>
-            <TextBlock Name="MediaName" HorizontalAlignment="Left" Margin="10,5,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Height="Auto" Width="160" Foreground="#FF79DBF7" />
-            <TextBlock Name="MediaAuthor" HorizontalAlignment="Left" Margin="10,0,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Height="Auto" Width="160" FontStyle="Italic" FontSize="9" Foreground="#FFF9F6F6"  />
-            <TextBlock Name="MediaAlbum" HorizontalAlignment="Left" Margin="10,0,0,10" TextWrapping="Wrap" VerticalAlignment="Top" Height="Auto" Width="160" FontStyle="Italic" FontSize="9" Foreground="#FFFDFCFC" />
-            <Border BorderBrush="Black" BorderThickness="0,1,0,0" />
-        </StackPanel>
-    </Grid>
+    <Border Name="ElementBorder" BorderThickness="2" BorderBrush="Black" Height="Auto" Width="Auto">
+        <Grid Name="ElementGrid" MouseEnter="Grid_MouseEnter" MouseLeave="Grid_MouseLeave" MouseLeftButtonDown="ElementGrid_MouseLeftButtonDown">
+            <Grid.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header = "Edit" Click="MenuItem_Click_1"/>
+                    <MenuItem Header = "Delete" Click="MenuItem_Click" />
+                </ContextMenu>
+            </Grid.ContextMenu>
+            <StackPanel>
+                <TextBlock Name="MediaName" HorizontalAlignment="Left" Margin="10,5,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Height="Auto" Width="160" Foreground="#FF79DBF7" />
+                <TextBlock Name="MediaAuthor" HorizontalAlignment="Left" Margin="10,0,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Height="Auto" Width="160" FontStyle="Italic" FontSize="9" Foreground="#FFF9F6F6"  />
+                <TextBlock Name="MediaAlbum" HorizontalAlignment="Left" Margin="10,0,0,10" TextWrapping="Wrap" VerticalAlignment="Top" Height="Auto" Width="160" FontStyle="Italic" FontSize="9" Foreground="#FFFDFCFC" />
+                <Border BorderBrush="Black" BorderThickness="0,1,0,0" />
+            </StackPanel>
+        </Grid>
+    </Border>
 </UserControl>

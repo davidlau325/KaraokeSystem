@@ -36,5 +36,11 @@ namespace KaraokeSystem
             this.ElementGrid.Children.Clear();
             this.ElementGrid.Background = null;
         }
+
+        private void Edit_btn_Click_1(object sender, RoutedEventArgs e)
+        {
+            this.ElementGrid.Children.Clear();
+            this.ElementGrid.Background = null;
+        }
     }
 }

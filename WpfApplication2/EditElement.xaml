@@ -21,7 +21,10 @@
             <TextBox Name="MediaName" Controls:TextboxHelper.Watermark="Media Name" Controls:TextboxHelper.ClearTextButton="True" HorizontalAlignment="Left" Margin="10,5,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Height="Auto" Width="140" Foreground="#FF086F9E"/>
             <TextBox Name="MediaAuthor" Controls:TextboxHelper.Watermark="Media Author" Controls:TextboxHelper.ClearTextButton="True" HorizontalAlignment="Left" Margin="10,5,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Height="Auto" Width="140" Foreground="#FF086F9E"  />
             <TextBox Name="MediaAlbum" Controls:TextboxHelper.Watermark="Media Album" Controls:TextboxHelper.ClearTextButton="True" HorizontalAlignment="Left" Margin="10,5,0,10" TextWrapping="Wrap" VerticalAlignment="Top" Height="Auto" Width="140" Foreground="#FF086F9E" />
-            <Button Content="Done" x:Name="Edit_btn" Style="{DynamicResource SquareButtonStyle}" Width="50" Height="Auto" Margin="10,0,0,10" HorizontalAlignment="Left" Click="Edit_btn_Click"/>
+            <DockPanel>
+            <Button Content="Done" x:Name="Cancel_btn" Style="{DynamicResource SquareButtonStyle}" Width="50" Height="Auto" Margin="10,0,0,10" HorizontalAlignment="Left" Click="Edit_btn_Click"/>
+            <Button Content="Cancel" x:Name="Edit_btn" Style="{DynamicResource SquareButtonStyle}" Width="50" Height="Auto" Margin="10,0,0,10" HorizontalAlignment="Left" Click="Edit_btn_Click_1" />
+            </DockPanel>
             <Border BorderBrush="Black" BorderThickness="0,1,0,0" />
         </StackPanel>
     </Grid>

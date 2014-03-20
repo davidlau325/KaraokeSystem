@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,25 +12,54 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
-using System.Windows.Shapes;
+using System.Text.RegularExpressions;
+using System.Windows.Threading;
+using System.Threading;
+using System.ComponentModel;
 
 namespace KaraokeSystem
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
-    /// </summary>
+    /// </summary>/// 
+
     public partial class MainWindow
     {
+        private static System.Threading.Thread wavPlayThread;
+        private static bool isAlreadyPause;
+        private static int playFileType; // 1 for wav, 0 for otherwise, -1 for haven't play
+        private static bool isPlayingVideo;
+        private static string currentMediaPath;
+        private static string currentMediaName;
+        public static MainWindow mainWindow;
+        private int result;
+        private static bool hasLyrics;
+
+        private int timeOffset = 0;
+        private DateTime timeStart;
+        private Dictionary<TimeSpan, string> dict;
+        private DispatcherTimer timer;
+        private DispatcherTimer timerVideoTime;
+
+        private static bool isRepeat;
+        private static bool isSuffle;
+
         public MainWindow()
         {
             InitializeComponent();
+            isAlreadyPause = false;
+            hasLyrics = false;
+            isRepeat = false;
+            isSuffle = false;
+            isPlayingVideo = false;
+            playFileType = -1;
         }
 
         public static readonly DependencyProperty ScaleValueProperty = DependencyProperty.Register("ScaleValue", typeof(double), typeof(MainWindow), new UIPropertyMetadata(1.0, new PropertyChangedCallback(OnScaleValueChanged), new CoerceValueCallback(OnCoerceScaleValue)));
 
         private static object OnCoerceScaleValue(DependencyObject o, object value)
         {
-            MainWindow mainWindow = o as MainWindow;
+            mainWindow = o as MainWindow;
             if (mainWindow != null)
                 return mainWindow.OnCoerceScaleValue((double)value);
             else
@@ -114,10 +144,12 @@ namespace KaraokeSystem
             {
                 var bc = new BrushConverter();
                 this.Repeat_btn.Background = (Brush)bc.ConvertFrom("#FFCCCCCC");
+                isRepeat = false;
             }
             else
             {
                 this.Repeat_btn.Background = Brushes.CadetBlue;
+                isRepeat = true;
             }
         }
 
@@ -127,11 +159,444 @@ namespace KaraokeSystem
             {
                 var bc = new BrushConverter();
                 this.Suffle_btn.Background = (Brush)bc.ConvertFrom("#FFCCCCCC");
+                isSuffle = false;
             }
             else
             {
                 this.Suffle_btn.Background = Brushes.CadetBlue;
+                isSuffle = true;
             } 
+        }
+
+        private void mediaPlayer_MediaOpened(object sender, RoutedEventArgs e)
+        {
+            timelineSlider.Maximum = mediaPlayer.NaturalDuration.TimeSpan.TotalSeconds;
+            if (timerVideoTime != null)
+            {
+                timerVideoTime.Stop();
+            }
+            timerVideoTime = new DispatcherTimer();
+            timerVideoTime.Interval = TimeSpan.FromSeconds(1);
+            timerVideoTime.Tick += new EventHandler(timer_Tick_player);
+            timerVideoTime.Start();
+
+            timelineSlider.AddHandler(MouseLeftButtonUpEvent, new MouseButtonEventHandler(timelineSlider_MouseLeftButtonUp), true);
+        }
+
+        void timer_Tick_player(object sender, EventArgs e)
+        {
+            if (mediaPlayer.NaturalDuration.HasTimeSpan)
+            {
+                if (mediaPlayer.NaturalDuration.TimeSpan.TotalSeconds > 0)
+                {
+                    timelineSlider.Value = mediaPlayer.Position.TotalSeconds;
+                }
+            }
+        }
+
+        private void Play_btn_Click(object sender, RoutedEventArgs e)
+        {
+                if (playFileType == 1)
+                {
+                    if (isAlreadyPause == true)
+                    {
+                        WavePlayerLib.ResumeWave();
+                        NowPlayingMedia.Text = "Now Playing: " + currentMediaName;
+                        Play_btn.Visibility = Visibility.Hidden;
+                        Pause_btn.Visibility = Visibility.Visible;
+                        if (hasLyrics)
+                        {
+                            this.timer.Start();
+                        }
+                    }
+                    else 
+                    {
+                        playWaveFile(currentMediaName, currentMediaPath);
+                    }
+                }
+                else if(playFileType == 0)
+                {
+                    if (isAlreadyPause == true)
+                    {
+                        mediaPlayer.Play();
+                        NowPlayingMedia.Text = "Now Playing: " + currentMediaName;
+                        Play_btn.Visibility = Visibility.Hidden;
+                        Pause_btn.Visibility = Visibility.Visible;
+                        if (hasLyrics)
+                        {
+                            this.timer.Start();
+                        }
+                    }
+                    else 
+                    {
+                        playNonWaveFile(currentMediaName, currentMediaPath);
+                    }
+                }else{
+                string messageBoxText = "Please select a media to play.";
+                string caption = "Error";
+                MessageBoxButton button = MessageBoxButton.OK;
+                MessageBoxImage icon = MessageBoxImage.Warning;
+                System.Windows.MessageBox.Show(messageBoxText, caption, button, icon);
+                }
+        }
+
+        private void Stop_btn_Click(object sender, RoutedEventArgs e)
+        {
+                if (playFileType == 1)
+                {
+                    WavePlayerLib.StopWave();
+                    NowPlayingMedia.Text = "Stop";
+                    Play_btn.Visibility = Visibility.Visible;
+                    Pause_btn.Visibility = Visibility.Hidden;
+                    if (hasLyrics) {
+                        stopLyrics();
+                    }
+                }
+                else if(playFileType == 0)
+                {
+                    mediaPlayer.Stop();
+                    NowPlayingMedia.Text = "Stop";
+                    Play_btn.Visibility = Visibility.Visible;
+                    Pause_btn.Visibility = Visibility.Hidden;
+                    if (hasLyrics)
+                    {
+                        stopLyrics();
+                    }
+                }else{
+                 string messageBoxText = "Please select a media to play.";
+                string caption = "Error";
+                MessageBoxButton button = MessageBoxButton.OK;
+                MessageBoxImage icon = MessageBoxImage.Warning;
+                System.Windows.MessageBox.Show(messageBoxText, caption, button, icon);
+                }
+        }
+
+        private void Volume_Slide_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (playFileType == 1)
+            {
+                int vol = (int)(Volume_Slider.Value * 100);
+                WavePlayerLib.setVolume(vol);
+            }
+            else if (playFileType == 0)
+            {
+                try
+                {
+                    mediaPlayer.Volume = (double)Volume_Slider.Value;
+                }
+                catch (NullReferenceException)
+                {
+
+                }
+            }
+        }
+
+        public void playNonWaveFile(string mediaName, string mediaPath) {
+            playVideoFile(mediaName, mediaPath,1);
+            hasLyrics = load_lyrics(mediaPath);
+            if (hasLyrics == true)
+            {
+                this.timeStart = DateTime.Now;
+                this.timer.Start();
+            }
+            isPlayingVideo = false;
+        }
+
+        public void playVideoFile(string mediaName, string mediaPath,int fn) 
+        {
+            currentMediaName = mediaName;
+            currentMediaPath = mediaPath;
+
+            stopPlaying();
+            playFileType = 0;
+            App.nowPlaying = mediaPath;
+            App.reloadMediaList("");
+            NowPlayingMedia.Text = "Now Playing: " + mediaName;
+
+            Play_btn.Visibility = Visibility.Hidden;
+            Pause_btn.Visibility = Visibility.Visible;
+
+            mediaPlayer.Source = new Uri(mediaPath);
+            mediaPlayer.Volume = (double)Volume_Slider.Value;
+            mediaPlayer.Play();
+            mediaPlayer.Visibility = Visibility.Visible;
+            if (fn == 0) {
+                sp_lyric.Children.Clear();
+            }
+            isPlayingVideo = true;
+        }
+
+        private void stopPlaying() {
+            if (playFileType == 1 && isAlreadyPause == true)
+            {
+                WavePlayerLib.ResumeWave();
+                WavePlayerLib.StopWave();
+                wavPlayThread.Abort();
+            }
+            else if (playFileType == 1)
+            {
+                WavePlayerLib.StopWave();
+                wavPlayThread.Abort();
+            }
+            else if (playFileType == 0)
+            {
+                mediaPlayer.Stop();
+                mediaPlayer.Close();
+                mediaPlayer.Visibility = Visibility.Hidden;
+            }
+            timelineSlider.Value = 0;
+            if (hasLyrics) {
+                stopLyrics();
+            }
+        }
+
+        private void stopLyrics() {
+            this.timer.Stop();
+            this.timeOffset = 0;
+            sv_lyric.ScrollToVerticalOffset(0);
+            foreach (UIElement element in sp_lyric.Children)
+            {
+                if (element is TextBlock)
+                {
+                    ((TextBlock)element).Foreground = new SolidColorBrush(Color.FromArgb(255, 255, 0, 128));
+                }
+            }
+        }
+
+        private void sliderWave() {
+            Thread.Sleep(1000);
+            int totalDuration = WavePlayerLib.totalDuration();
+            timelineSlider.Maximum = (totalDuration - 1);
+            if (timerVideoTime != null) {
+                timerVideoTime.Stop();
+            }
+            timerVideoTime = new DispatcherTimer();
+            timerVideoTime.Interval = TimeSpan.FromSeconds(1);
+            timerVideoTime.Tick += new EventHandler(timer_wav);
+            timerVideoTime.Start();
+
+          //  timelineSlider.AddHandler(MouseLeftButtonUpEvent, new MouseButtonEventHandler(timelineSlider_MouseLeftButtonUp), true);
+        }
+
+        void timer_wav(object sender, EventArgs e)
+        {
+            timelineSlider.Value = WavePlayerLib.currentSec();
+        }
+        /*
+
+        private void startWavThread(StringBuilder waveName) {
+            var bw = new BackgroundWorker();
+
+            bw.DoWork += (sender, args) =>
+            {
+                result = WavePlayerLib.PlayWave(waveName);
+            };
+            bw.RunWorkerCompleted += (sender, args) =>
+            {
+                if (args.Error != null) {
+                    mediaEnd();
+                }
+            };
+            bw.RunWorkerAsync();
+
+        } */
+
+        public void playWaveFile(string mediaName,string mediaPath) {
+            StringBuilder waveName = new StringBuilder();
+            waveName.Append(mediaPath);
+
+            currentMediaName = mediaName;
+            currentMediaPath = mediaPath;
+            App.nowPlaying = mediaPath;
+            App.reloadMediaList("");
+            NowPlayingMedia.Text = "Now Playing: " + mediaName;
+
+            stopPlaying();
+            playFileType = 1;
+
+            result = 0;
+            
+             wavPlayThread = new System.Threading.Thread(delegate()
+             {
+                 result = WavePlayerLib.PlayWave(waveName);
+             }); 
+            //startWavThread(waveName);
+
+             if (result == 0)
+             {
+                 playFileType = 1;
+                 Play_btn.Visibility = Visibility.Hidden;
+                 Pause_btn.Visibility = Visibility.Visible;
+                 wavPlayThread.Start();
+                 hasLyrics = load_lyrics(mediaPath);
+                 isPlayingVideo = false;
+                 sliderWave();
+             }
+             else {
+                 string messageBoxText = "The media cannot be opened!";
+                 string caption = "Error";
+                 MessageBoxButton button = MessageBoxButton.OK;
+                 MessageBoxImage icon = MessageBoxImage.Warning;
+                 System.Windows.MessageBox.Show(messageBoxText, caption, button, icon);
+             }
+        }
+
+        private void Pause_btn_Click(object sender, RoutedEventArgs e)
+        {
+            if (playFileType == 1)
+            {
+                WavePlayerLib.PauseWave();
+            }
+            else {
+                mediaPlayer.Pause();
+            }
+            this.timer.Stop();
+            NowPlayingMedia.Text = "Pause";
+            isAlreadyPause = true;
+            Play_btn.Visibility = Visibility.Visible;
+            Pause_btn.Visibility = Visibility.Hidden;
+        }
+
+        // Lyrics Control
+        private bool load_lyrics(string mediaPath)
+        {
+            string lrcFile = Path.ChangeExtension(mediaPath, ".lrc");
+            this.dict = new Dictionary<TimeSpan, string>();
+            this.timer = new DispatcherTimer();
+            timer.Interval = new TimeSpan(0, 0, 1);
+            timer.Tick += timer_Tick;
+
+            sp_lyric.Children.Clear();
+            string lyric = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, lrcFile);
+            if (File.Exists(lyric))
+            {
+                string[] lines = File.ReadAllLines(lyric, Encoding.UTF8);
+                foreach (string line in lines)
+                {
+                    Regex rgx = new Regex(@"\[(\d\d):(\d\d)\.\d\d\](.*)");
+                    if (rgx.IsMatch(line))
+                    {
+                        Match m = rgx.Match(line);
+
+                        int minutes = int.Parse(m.Groups[1].Value);
+                        int seconds = int.Parse(m.Groups[2].Value);
+
+                        TimeSpan span = new TimeSpan(0, minutes, seconds);
+                        if (!this.dict.ContainsKey(span))
+                        {
+                            this.dict.Add(span, m.Groups[3].Value);
+                        }
+
+                        TextBlock tb = new TextBlock();
+                        tb.Margin = new Thickness(5);
+                        tb.Name = String.Format("tb{0:00}m{1:00}s", minutes, seconds);
+                        tb.Text = m.Groups[3].Value;
+                        tb.TextWrapping = TextWrapping.Wrap;
+                        sp_lyric.Children.Add(tb);
+                    }
+                }
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+
+        private void timer_Tick(object sender, EventArgs e)
+        {
+            timeOffset++;
+            int minutes = timeOffset / 60;
+            int seconds = timeOffset % 60;
+
+            if (timeOffset > 30)
+            {
+                sv_lyric.ScrollToVerticalOffset(5 * timeOffset - 150);
+            }
+
+            TimeSpan ts = new TimeSpan(0, minutes, seconds);
+            if (this.dict.ContainsKey(ts))
+            {
+                foreach (UIElement element in sp_lyric.Children)
+                {
+                    if (element is TextBlock)
+                    {
+                        string name = String.Format("tb{0:00}m{1:00}s", minutes, seconds);
+                        if (((TextBlock)element).Name == name)
+                        {
+                            ((TextBlock)element).Foreground = new SolidColorBrush(Color.FromArgb(255, 0, 192, 255));
+                        }
+                        else
+                        {
+                            ((TextBlock)element).Foreground = new SolidColorBrush(Color.FromArgb(255, 255, 0, 128));
+                        }
+                    }
+                }
+            }
+        }
+
+        private void timelineSlider_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (playFileType == 1)
+            {
+                int sec = (int)timelineSlider.Value;
+                WavePlayerLib.skipTo(sec);
+            }
+            else
+            {
+                mediaPlayer.Position = TimeSpan.FromSeconds(timelineSlider.Value);
+            }
+        }
+
+        private void mediaEnd() {
+            if (isRepeat)
+            {
+                string ext = Path.GetExtension(currentMediaPath);
+                if (ext.Equals(".wav"))
+                {
+                    playWaveFile(currentMediaName, currentMediaPath);
+                }
+                else if (ext.Equals(".wmv"))
+                {
+                    playVideoFile(currentMediaName, currentMediaPath, 0);
+                }
+                else
+                {
+                    playNonWaveFile(currentMediaName, currentMediaPath);
+                }
+            }
+            else
+            {
+                string type = "audio";
+                int suffle = 0;
+                if (isPlayingVideo)
+                {
+                    type = "video";
+                }
+                if (isSuffle) {
+                    suffle = 1;
+                }
+
+                string nextMediaPath = App.getNextMedia(type,suffle);
+                string nextMediaName = App.findMediaName(nextMediaPath);
+                string ext = Path.GetExtension(nextMediaPath);
+                if (ext.Equals(".wav"))
+                {
+                    playWaveFile(nextMediaName, nextMediaPath);
+                }
+                else if (ext.Equals(".wmv"))
+                {
+                    playVideoFile(nextMediaName, nextMediaPath, 0);
+                }
+                else
+                {
+                    playNonWaveFile(nextMediaName, nextMediaPath);
+                }
+            }
+        }
+
+        private void mediaPlayer_MediaEnded(object sender, RoutedEventArgs e)
+        {
+            mediaEnd();
         }
     }
 }

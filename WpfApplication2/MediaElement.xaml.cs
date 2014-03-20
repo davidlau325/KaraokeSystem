@@ -12,7 +12,8 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
-using System.Windows.Shapes;
+using System.IO;
+
 
 namespace KaraokeSystem
 {
@@ -75,6 +76,26 @@ namespace KaraokeSystem
             ee.MediaAlbum.Text = this.MediaAlbum.Text;
 
             this.ElementGrid.Children.Add(ee); 
+        }
+
+        private void ElementGrid_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            string name = this.MediaName.Text;
+            string[] data = name.Split(new string[] { " - " }, StringSplitOptions.None);
+
+            string extension = Path.GetExtension(data[1]);
+            if (extension.Equals(".wav"))
+            {
+                MainWindow.mainWindow.playWaveFile(data[0], data[1]);
+            }
+            else if (extension.Equals(".wmv"))
+            {
+                MainWindow.mainWindow.playVideoFile(data[0], data[1],0);
+            }
+            else 
+            {
+                MainWindow.mainWindow.playNonWaveFile(data[0], data[1]);
+            }
         }
 
     }

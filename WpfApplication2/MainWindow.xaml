@@ -5,6 +5,7 @@
         Title="3280 Media Player" Height="500" Width="750" Name="myMainWindow">
     <Window.Resources>
         <ResourceDictionary>
+            <BitmapImage x:Key="stop_btn" UriSource="Resources/stop.png"/>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="/Resources/Icons.xaml" />
             </ResourceDictionary.MergedDictionaries>
@@ -69,12 +70,8 @@
                     </Rectangle.Fill>
                 </Rectangle>
             </Button>
-            <Button Name="Stop_btn" HorizontalAlignment="Left" Margin="121,23,0,0" VerticalAlignment="Top" Width="50" Style="{DynamicResource MetroCircleButtonStyle}" Height="50">
-                <Rectangle Height="15" Width="15">
-                    <Rectangle.Fill>
-                        <VisualBrush Visual="{StaticResource appbar_stop}"/>
-                    </Rectangle.Fill>
-                </Rectangle>
+            <Button Name="Stop_btn" HorizontalAlignment="Left" Margin="121,23,0,0" VerticalAlignment="Top" Width="50" Style="{DynamicResource MetroCircleButtonStyle}" Height="50" Click="Stop_btn_Click">
+                <Image Source="{StaticResource stop_btn}" Width="13" Height="13"/>
             </Button>
             <Button Name="Rewind_btn" HorizontalAlignment="Left" Margin="171,23,0,0" VerticalAlignment="Top" Width="50" Style="{DynamicResource MetroCircleButtonStyle}" Height="50">
                 <Rectangle Height="15" Width="15">
@@ -83,10 +80,17 @@
                     </Rectangle.Fill>
                 </Rectangle>
             </Button>
-            <Button Name="Play_btn" HorizontalAlignment="Left" Margin="221,16,0,0" VerticalAlignment="Top" Width="60" Style="{DynamicResource MetroCircleButtonStyle}" Height="60">
-                <Rectangle Height="25" Width="25">
+            <Button Name="Play_btn" HorizontalAlignment="Left" Margin="221,16,0,0" VerticalAlignment="Top" Width="60" Style="{DynamicResource MetroCircleButtonStyle}" Height="60" Click="Play_btn_Click">
+                <Rectangle Height="23" Width="23">
                     <Rectangle.Fill>
                         <VisualBrush Visual="{StaticResource appbar_play}"/>
+                    </Rectangle.Fill>
+                </Rectangle>
+            </Button>
+            <Button Name="Pause_btn" HorizontalAlignment="Left" Margin="221,16,0,0" VerticalAlignment="Top" Width="60" Style="{DynamicResource MetroCircleButtonStyle}" Height="60" Visibility="Hidden" Click="Pause_btn_Click">
+                <Rectangle Height="23" Width="23">
+                    <Rectangle.Fill>
+                        <VisualBrush Visual="{StaticResource appbar_pause}"/>
                     </Rectangle.Fill>
                 </Rectangle>
             </Button>
@@ -103,9 +107,17 @@
                         <VisualBrush Visual="{StaticResource appbar_sound_3}"/>
                     </Rectangle.Fill>
                 </Rectangle>
-                <Slider Name="Volume_Slide" HorizontalAlignment="Left" Margin="10,35,0,0" VerticalAlignment="Top" Height="27" Width="76" Value="100"/>
+                <Slider Name="Volume_Slider" HorizontalAlignment="Left" Margin="10,35,0,0" VerticalAlignment="Top" Height="27" Width="76" Value="1" Maximum="1" Minimum="0" ValueChanged="Volume_Slide_ValueChanged" />
             </DockPanel>
         </Grid>
-        <TextBlock HorizontalAlignment="Left" Height="23" Margin="250,13,0,0" TextWrapping="Wrap" Name="Now_Playing_Media" Text="Now Playing:" VerticalAlignment="Top" Width="451" FontFamily="Segoe UI, Lucida Sans Unicode, Verdana" />
+        <TextBlock HorizontalAlignment="Left" Height="23" Margin="281,13,0,0" TextWrapping="Wrap" Name="NowPlayingMedia" Text="Stop" VerticalAlignment="Top" Width="399" FontFamily="Segoe UI, Lucida Sans Unicode, Verdana" />
+        <TextBlock HorizontalAlignment="Left" Height="23" Margin="241,13,0,0" TextWrapping="Wrap" Text="Status:" VerticalAlignment="Top" Width="37" FontFamily="Segoe UI, Lucida Sans Unicode, Verdana" FontWeight="Bold" />
+        <MediaElement Name="mediaPlayer" HorizontalAlignment="Left" Height="288" Margin="227,57,0,0" VerticalAlignment="Top" Width="512" LoadedBehavior="Manual" UnloadedBehavior="Stop" MediaOpened="mediaPlayer_MediaOpened" Volume="0.5" MediaEnded="mediaPlayer_MediaEnded"/>
+        <Grid Margin="271,41,71,128">
+            <ScrollViewer x:Name="sv_lyric">
+                <StackPanel x:Name="sp_lyric"></StackPanel>
+            </ScrollViewer>
+        </Grid>
+        <Slider Name="timelineSlider" Margin="241,363,19,90" Height="Auto" MouseLeftButtonUp="timelineSlider_MouseLeftButtonUp"/>
     </Grid>
 </Controls:MetroWindow>

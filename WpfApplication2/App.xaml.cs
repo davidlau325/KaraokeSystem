@@ -5,6 +5,7 @@ using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Media;
 
 namespace KaraokeSystem
 {
@@ -14,23 +15,82 @@ namespace KaraokeSystem
     public partial class App : Application
     {
         private static MainWindow mWindow;
+        public static string nowPlaying;
+        private static List<string> mediaPath;
+        private static List<string> mediaName;
+        private static List<string> mediaAuthor;
+        private static List<string> mediaAlbum;
+        private static List<string> mediaType;
+
         private void Application_Startup(object sender, StartupEventArgs e)
         {
             mWindow = new MainWindow();
             Application.Current.MainWindow = mWindow;
             mWindow.Show();
+            nowPlaying = "";
             reloadMediaList("");
+        }
+
+        public static string getNextMedia(string type,int suffle) {
+            bool found = false;
+            if (suffle == 1)
+            {
+                Random rnd = new Random();
+                int suf = 0;
+                while (!found)
+                {
+                    suf = rnd.Next(0, mediaType.Count);
+                    if (mediaType[suf].Equals(type)) {
+                        if (!mediaPath[suf].Equals(nowPlaying)) {
+                            found = true;
+                        }
+                    }
+                }
+                return mediaPath[suf];
+            }
+            else
+            {
+                for (int i = 0; i < mediaType.Count; i++)
+                {
+                    if (found)
+                    {
+                        if (mediaType[i].Equals(type))
+                        {
+                            return mediaPath[i];
+                        }
+                    }
+                    else
+                    {
+                        if (mediaPath[i].Equals(nowPlaying))
+                        {
+                            found = true;
+                        }
+                    }
+                }
+                return mediaPath[0];
+            }
+        }
+
+        public static string findMediaName(string mediaPath) {
+            for (int i = 0; i < mediaType.Count; i++)
+            {
+                    if (mediaPath[i].Equals(mediaPath))
+                    {
+                        return mediaName[i];
+                    }
+            }
+            return "";
         }
 
         public static void reloadMediaList(string searchString) {
             MediaManagement media = new MediaManagement();
             media.importInfo();
 
-            List<string> mediaPath = media.getFilePath();
-            List<string> mediaName = media.getMediaName();
-            List<string> mediaAuthor = media.getMediaAuthor();
-            List<string> mediaAlbum = media.getMediaAlbum();
-            List<string> mediaType = media.getMediaType();
+            mediaPath = media.getFilePath();
+            mediaName = media.getMediaName();
+            mediaAuthor = media.getMediaAuthor();
+            mediaAlbum = media.getMediaAlbum();
+            mediaType = media.getMediaType();
 
             mWindow.AudioList.Children.Clear();
             mWindow.VideoList.Children.Clear();
@@ -47,6 +107,12 @@ namespace KaraokeSystem
                         newMedia.MediaName.Text = mediaName[i] + " - " + mediaPath[i];
                         newMedia.MediaAuthor.Text = mediaAuthor[i];
                         newMedia.MediaAlbum.Text = mediaAlbum[i];
+                        newMedia.ElementBorder.BorderThickness = new Thickness(0,0,0,0);
+                        if (mediaPath[i].Equals(nowPlaying)) 
+                        {
+                            newMedia.ElementBorder.BorderThickness = new Thickness(2, 2, 2, 2);
+                        }
+
                         mWindow.AudioList.Children.Add(newMedia);
                         hasAudio = true;
                     }
@@ -59,6 +125,11 @@ namespace KaraokeSystem
                         newMedia.MediaName.Text = mediaName[i] + " - " + mediaPath[i];
                         newMedia.MediaAuthor.Text = mediaAuthor[i];
                         newMedia.MediaAlbum.Text = mediaAlbum[i];
+                        newMedia.ElementBorder.BorderThickness = new Thickness(0, 0, 0, 0);
+                        if (mediaPath[i].Equals(nowPlaying))
+                        {
+                            newMedia.ElementBorder.BorderThickness = new Thickness(2, 2, 2, 2);
+                        }
                         mWindow.VideoList.Children.Add(newMedia);
                         hasVideo = true;
                     }

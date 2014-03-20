@@ -48,8 +48,10 @@ namespace KaraokeSystem
 
         public void importInfo() 
         {
-            using (StreamReader infoFile = new StreamReader(infoFilename, Encoding.Unicode))
+            try
             {
+                StreamReader infoFile = new StreamReader(infoFilename, Encoding.Unicode);
+
                 string read;
                 string[] data;
 
@@ -67,6 +69,10 @@ namespace KaraokeSystem
                     }
                 }
                 infoFile.Close();
+            }
+            catch (Exception ex) 
+            {
+                File.Create(infoFilename);
             }
         }
 
