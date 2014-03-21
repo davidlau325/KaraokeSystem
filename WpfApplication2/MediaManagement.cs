@@ -46,6 +46,18 @@ namespace KaraokeSystem
             return this.mediaType;
         }
 
+        public bool IsExistMedia(string path)
+        {
+            for (int i = 0; i < filePath.Count; i++)
+            {
+                if (filePath[i].Equals(path))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         public void importInfo() 
         {
             try

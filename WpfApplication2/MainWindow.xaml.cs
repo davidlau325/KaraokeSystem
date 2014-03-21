@@ -25,7 +25,7 @@ namespace KaraokeSystem
 
     public partial class MainWindow
     {
-        private static System.Threading.Thread wavPlayThread;
+        //private static System.Threading.Thread wavPlayThread;
         private static bool isAlreadyPause;
         private static int playFileType; // 1 for wav, 0 for otherwise, -1 for haven't play
         private static bool isPlayingVideo;
@@ -41,6 +41,7 @@ namespace KaraokeSystem
         private DispatcherTimer timer;
         private DispatcherTimer timerVideoTime;
 
+        private bool isStop;
         private static bool isRepeat;
         private static bool isSuffle;
 
@@ -52,6 +53,7 @@ namespace KaraokeSystem
             isRepeat = false;
             isSuffle = false;
             isPlayingVideo = false;
+            isStop = false;
             playFileType = -1;
         }
 
@@ -112,6 +114,21 @@ namespace KaraokeSystem
             ScaleValue = (double)OnCoerceScaleValue(myMainWindow, value);
         }
 
+        private void Window_Drop(object sender, DragEventArgs e) 
+        {
+            string[] droppedFiles = null;
+            if (e.Data.GetDataPresent(DataFormats.FileDrop)) 
+            {
+                droppedFiles = e.Data.GetData(DataFormats.FileDrop, true) as string[];
+            }
+
+            if ((null == droppedFiles) || (!droppedFiles.Any())) { return; }
+
+            foreach (string s in droppedFiles) {
+                Add_New_Media_Helper(s);
+            }
+        }
+
         private void Add_New_Media(object sender, RoutedEventArgs e)
         {
             Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
@@ -124,11 +141,32 @@ namespace KaraokeSystem
             if (result == true)
             {
                 string filename = dlg.FileName;
-                MediaManagement mm = new MediaManagement();
-                mm.importInfo();
+                Add_New_Media_Helper(filename);
+            }
+        }
+
+        private void Add_New_Media_Helper(string filename) {
+            MediaManagement mm = new MediaManagement();
+            mm.importInfo();
+            if (mm.IsExistMedia(filename))
+            {
+                string messageBoxText = filename + " - You had already added this media file!";
+                string caption = "Error";
+                MessageBoxButton button = MessageBoxButton.OK;
+                MessageBoxImage icon = MessageBoxImage.Warning;
+                System.Windows.MessageBox.Show(messageBoxText, caption, button, icon);
+            }
+            else
+            {
                 mm.addNewMedia(filename);
                 mm.writeToInfo();
                 App.reloadMediaList("");
+
+                string messageBoxText = filename + " - New media added successfully!";
+                string caption = "Success";
+                MessageBoxButton button = MessageBoxButton.OK;
+                MessageBoxImage icon = MessageBoxImage.Warning;
+                System.Windows.MessageBox.Show(messageBoxText, caption, button, icon);
             }
         }
 
@@ -244,6 +282,7 @@ namespace KaraokeSystem
         {
                 if (playFileType == 1)
                 {
+                    isStop = true;
                     WavePlayerLib.StopWave();
                     NowPlayingMedia.Text = "Stop";
                     Play_btn.Visibility = Visibility.Visible;
@@ -251,6 +290,10 @@ namespace KaraokeSystem
                     if (hasLyrics) {
                         stopLyrics();
                     }
+                    timer.Stop();
+                    timelineSlider.RemoveHandler(MouseLeftButtonUpEvent, new MouseButtonEventHandler(timelineSlider_MouseLeftButtonUp));
+                    timelineSlider.Value = 0;
+                    isAlreadyPause = false;
                 }
                 else if(playFileType == 0)
                 {
@@ -262,6 +305,9 @@ namespace KaraokeSystem
                     {
                         stopLyrics();
                     }
+                    timelineSlider.RemoveHandler(MouseLeftButtonUpEvent, new MouseButtonEventHandler(timelineSlider_MouseLeftButtonUp));
+                    timelineSlider.Value = 0;
+                    isAlreadyPause = false;
                 }else{
                  string messageBoxText = "Please select a media to play.";
                 string caption = "Error";
@@ -331,12 +377,12 @@ namespace KaraokeSystem
             {
                 WavePlayerLib.ResumeWave();
                 WavePlayerLib.StopWave();
-                wavPlayThread.Abort();
+               // wavPlayThread.Abort();
             }
             else if (playFileType == 1)
             {
                 WavePlayerLib.StopWave();
-                wavPlayThread.Abort();
+             //   wavPlayThread.Abort();
             }
             else if (playFileType == 0)
             {
@@ -344,6 +390,7 @@ namespace KaraokeSystem
                 mediaPlayer.Close();
                 mediaPlayer.Visibility = Visibility.Hidden;
             }
+            timelineSlider.RemoveHandler(MouseLeftButtonUpEvent, new MouseButtonEventHandler(timelineSlider_MouseLeftButtonUp));
             timelineSlider.Value = 0;
             if (hasLyrics) {
                 stopLyrics();
@@ -375,14 +422,15 @@ namespace KaraokeSystem
             timerVideoTime.Tick += new EventHandler(timer_wav);
             timerVideoTime.Start();
 
-          //  timelineSlider.AddHandler(MouseLeftButtonUpEvent, new MouseButtonEventHandler(timelineSlider_MouseLeftButtonUp), true);
+           timelineSlider.RemoveHandler(MouseLeftButtonUpEvent, new MouseButtonEventHandler(timelineSlider_MouseLeftButtonUp));
+           timelineSlider.AddHandler(MouseLeftButtonUpEvent, new MouseButtonEventHandler(timelineSlider_MouseLeftButtonUp), true);
         }
 
         void timer_wav(object sender, EventArgs e)
-        {
-            timelineSlider.Value = WavePlayerLib.currentSec();
+        {  
+                timelineSlider.Value = WavePlayerLib.currentSec();
         }
-        /*
+        
 
         private void startWavThread(StringBuilder waveName) {
             var bw = new BackgroundWorker();
@@ -393,13 +441,14 @@ namespace KaraokeSystem
             };
             bw.RunWorkerCompleted += (sender, args) =>
             {
-                if (args.Error != null) {
-                    mediaEnd();
+                if (!isStop)
+                {
+                    mediaEnd(0);
                 }
             };
             bw.RunWorkerAsync();
 
-        } */
+        } 
 
         public void playWaveFile(string mediaName,string mediaPath) {
             StringBuilder waveName = new StringBuilder();
@@ -415,21 +464,26 @@ namespace KaraokeSystem
             playFileType = 1;
 
             result = 0;
-            
+            /*
              wavPlayThread = new System.Threading.Thread(delegate()
              {
                  result = WavePlayerLib.PlayWave(waveName);
-             }); 
-            //startWavThread(waveName);
+             });  */
+            startWavThread(waveName);
 
              if (result == 0)
              {
                  playFileType = 1;
                  Play_btn.Visibility = Visibility.Hidden;
                  Pause_btn.Visibility = Visibility.Visible;
-                 wavPlayThread.Start();
+                 //wavPlayThread.Start();
                  hasLyrics = load_lyrics(mediaPath);
                  isPlayingVideo = false;
+                 if (hasLyrics == true)
+                 {
+                     this.timeStart = DateTime.Now;
+                     this.timer.Start();
+                 }
                  sliderWave();
              }
              else {
@@ -450,7 +504,10 @@ namespace KaraokeSystem
             else {
                 mediaPlayer.Pause();
             }
-            this.timer.Stop();
+            if (this.timer != null)
+            {
+                this.timer.Stop();
+            }
             NowPlayingMedia.Text = "Pause";
             isAlreadyPause = true;
             Play_btn.Visibility = Visibility.Visible;
@@ -498,6 +555,11 @@ namespace KaraokeSystem
                 return true;
             }
             else {
+                string messageBoxText = "No Lyrics File Found. Please include it at the same folder as the media file with same name (e.g. abc.mp3 = abc.lrc).";
+                string caption = "Error";
+                MessageBoxButton button = MessageBoxButton.OK;
+                MessageBoxImage icon = MessageBoxImage.Warning;
+                System.Windows.MessageBox.Show(messageBoxText, caption, button, icon);
                 return false;
             }
         }
@@ -523,11 +585,15 @@ namespace KaraokeSystem
                         string name = String.Format("tb{0:00}m{1:00}s", minutes, seconds);
                         if (((TextBlock)element).Name == name)
                         {
-                            ((TextBlock)element).Foreground = new SolidColorBrush(Color.FromArgb(255, 0, 192, 255));
+                           // ((TextBlock)element).Foreground = new SolidColorBrush(Color.FromArgb(255, 0, 192, 255));
+                            ((TextBlock)element).Foreground = Brushes.Red;
+                            ((TextBlock)element).FontWeight = FontWeights.Bold;
                         }
                         else
                         {
-                            ((TextBlock)element).Foreground = new SolidColorBrush(Color.FromArgb(255, 255, 0, 128));
+                           // ((TextBlock)element).Foreground = new SolidColorBrush(Color.FromArgb(255, 255, 0, 128));
+                            ((TextBlock)element).Foreground = Brushes.Black;
+                            ((TextBlock)element).FontWeight = FontWeights.Normal;
                         }
                     }
                 }
@@ -540,63 +606,74 @@ namespace KaraokeSystem
             {
                 int sec = (int)timelineSlider.Value;
                 WavePlayerLib.skipTo(sec);
+                timeOffset = sec;
             }
             else
             {
                 mediaPlayer.Position = TimeSpan.FromSeconds(timelineSlider.Value);
+                timeOffset = (int)timelineSlider.Value;
             }
         }
 
-        private void mediaEnd() {
-            if (isRepeat)
+        private void mediaEnd(int previous) {
+            if (isRepeat && previous == 0)
             {
-                string ext = Path.GetExtension(currentMediaPath);
-                if (ext.Equals(".wav"))
-                {
-                    playWaveFile(currentMediaName, currentMediaPath);
-                }
-                else if (ext.Equals(".wmv"))
-                {
-                    playVideoFile(currentMediaName, currentMediaPath, 0);
-                }
-                else
-                {
-                    playNonWaveFile(currentMediaName, currentMediaPath);
-                }
-            }
-            else
-            {
-                string type = "audio";
-                int suffle = 0;
-                if (isPlayingVideo)
-                {
-                    type = "video";
-                }
-                if (isSuffle) {
-                    suffle = 1;
-                }
+                    string ext = Path.GetExtension(currentMediaPath);
+                    if (ext.Equals(".wav"))
+                    {
+                        playWaveFile(currentMediaName, currentMediaPath);
+                    }
+                    else if (ext.Equals(".wmv"))
+                    {
+                        playVideoFile(currentMediaName, currentMediaPath, 0);
+                    }
+                    else
+                    {
+                        playNonWaveFile(currentMediaName, currentMediaPath);
+                    }
+            }else{
+                    string type = "audio";
+                    int suffle = 0;
+                    if (isPlayingVideo)
+                    {
+                        type = "video";
+                    }
+                    if (isSuffle)
+                    {
+                        suffle = 1;
+                    }
 
-                string nextMediaPath = App.getNextMedia(type,suffle);
-                string nextMediaName = App.findMediaName(nextMediaPath);
-                string ext = Path.GetExtension(nextMediaPath);
-                if (ext.Equals(".wav"))
-                {
-                    playWaveFile(nextMediaName, nextMediaPath);
+                    string nextMediaPath = App.getNextMedia(type, suffle,previous);
+                    string nextMediaName = App.findMediaName(nextMediaPath);
+                    string ext = Path.GetExtension(nextMediaPath);
+                    if (ext.Equals(".wav"))
+                    {
+                        playWaveFile(nextMediaName, nextMediaPath);
+                    }
+                    else if (ext.Equals(".wmv"))
+                    {
+                        playVideoFile(nextMediaName, nextMediaPath, 0);
+                    }
+                    else
+                    {
+                        playNonWaveFile(nextMediaName, nextMediaPath);
+                    }
                 }
-                else if (ext.Equals(".wmv"))
-                {
-                    playVideoFile(nextMediaName, nextMediaPath, 0);
-                }
-                else
-                {
-                    playNonWaveFile(nextMediaName, nextMediaPath);
-                }
-            }
         }
 
         private void mediaPlayer_MediaEnded(object sender, RoutedEventArgs e)
         {
-            mediaEnd();
+            mediaEnd(0);
+        }
+
+        private void Forward_btn_Click(object sender, RoutedEventArgs e)
+        {
+            mediaEnd(2);
+        }
+
+        private void Rewind_btn_Click(object sender, RoutedEventArgs e)
+        {
+            mediaEnd(1);
         }
     }
 }

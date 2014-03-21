@@ -31,43 +31,75 @@ namespace KaraokeSystem
             reloadMediaList("");
         }
 
-        public static string getNextMedia(string type,int suffle) {
+        void App_Exit(object sender, ExitEventArgs e) 
+        {
+            WavePlayerLib.StopWave();
+        }
+
+        public static string getNextMedia(string type, int suffle, int previous)
+        {
             bool found = false;
-            if (suffle == 1)
+            if (previous == 1)
             {
-                Random rnd = new Random();
-                int suf = 0;
+                int ne = 0;
+                int i;
+                for (i = 0; i < mediaType.Count; i++) { 
+                    if(mediaPath[i].Equals(nowPlaying)){
+                        break;
+                    }
+                }
                 while (!found)
                 {
-                    suf = rnd.Next(0, mediaType.Count);
-                    if (mediaType[suf].Equals(type)) {
-                        if (!mediaPath[suf].Equals(nowPlaying)) {
-                            found = true;
-                        }
+                    ne = i - 1; 
+                    if (ne < 0)
+                    {
+                        ne = (mediaType.Count - 1);
+                    }
+                    if (mediaType[ne].Equals(type))
+                    {
+                        found = true;
                     }
                 }
-                return mediaPath[suf];
-            }
-            else
-            {
-                for (int i = 0; i < mediaType.Count; i++)
+                return mediaPath[ne];
+            }else{
+                if (suffle == 1)
                 {
-                    if (found)
+                    Random rnd = new Random();
+                    int suf = 0;
+                    while (!found)
                     {
-                        if (mediaType[i].Equals(type))
+                        suf = rnd.Next(0, mediaType.Count);
+                        if (mediaType[suf].Equals(type))
                         {
-                            return mediaPath[i];
+                            if (!mediaPath[suf].Equals(nowPlaying))
+                            {
+                                found = true;
+                            }
                         }
                     }
-                    else
-                    {
-                        if (mediaPath[i].Equals(nowPlaying))
-                        {
-                            found = true;
-                        }
-                    }
+                    return mediaPath[suf];
                 }
-                return mediaPath[0];
+                else
+                {
+                    for (int i = 0; i < mediaType.Count; i++)
+                    {
+                        if (found)
+                        {
+                            if (mediaType[i].Equals(type))
+                            {
+                                return mediaPath[i];
+                            }
+                        }
+                        else
+                        {
+                            if (mediaPath[i].Equals(nowPlaying))
+                            {
+                                found = true;
+                            }
+                        }
+                    }
+                    return mediaPath[0];
+                }
             }
         }
 
